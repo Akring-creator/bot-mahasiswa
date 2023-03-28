@@ -109,7 +109,7 @@ def run():
     student = openFile()
     with Students() as bot:
         bot.land_first_page()
-        for ind in range(12, len(student)):
+        for ind in range(0, len(student)):
             df = pd.DataFrame()
             error = pd.DataFrame()
             name = student['Name'][ind]
