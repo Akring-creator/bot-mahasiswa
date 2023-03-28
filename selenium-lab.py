@@ -43,7 +43,7 @@ class Students(webdriver.Chrome):
         )
         selected_element.send_keys(f'{name}')
         selected_element.send_keys(Keys.ENTER)
-        time.sleep(2)
+        time.sleep(5)
         
 
     def find_name(self, name):
@@ -54,16 +54,23 @@ class Students(webdriver.Chrome):
                     By.XPATH, f'//span[text()="{name}"]'
                 )
         total = len(check)
+        print(total, name)
         if total > 1:
              raise DataDuplicate(message =f'There are {total} data')
         elif total < 1:
              raise MissingData(message ='Data doesnt exist')
-        else: 
-            selected_element = self.find_element(
-                    By.XPATH, f'//span[text()="{name}"]'
+        else:
+            try:
+                selected_element = self.find_element(
+                        By.XPATH, f'//span[text()="{name}"]'
+                    )
+                selected_element.click()
+                selected_table = self.find_element(
+                By.XPATH, '//table[@class = "table table-bordered"]'
                 )
-            selected_element.click()
-        time.sleep(4)
+            except:
+                raise MissingData(message ='Data doesnt exist')
+        
         
     def extract_data(self, userid): 
         """
@@ -109,7 +116,7 @@ def run():
     student = openFile()
     with Students() as bot:
         bot.land_first_page()
-        for ind in range(8, len(student)):
+        for ind in range(11, len(student)):
             df = pd.DataFrame()
             error = pd.DataFrame()
             name = student['Name'][ind]
@@ -142,6 +149,6 @@ def saveFile(path, df):
     main = main.append(df, ignore_index = True)
     main.to_excel(path, index = False)
 
-# run()
-df = openFile()
-print(df.iloc[8])
+run()
+# df = openFile()
+# print(df.iloc[11])
