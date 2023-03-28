@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.relative_locator import locate_with
 import pandas as pd
 import os
 import time
@@ -42,34 +43,44 @@ class Students(webdriver.Chrome):
             By.XPATH, '//input[@pattern="([A-z0-9À-ž\s]){2,}"]'
         )
         selected_element.send_keys(f'{name}')
-        selected_element.send_keys(Keys.ENTER)
+        # selected_element.send_keys(Keys.ENTER)
         time.sleep(5)
         
 
-    def find_name(self, name):
+    def find_name(self, name, university):
         """
         This function try to find the name and check if the name duplicate or missing
         """
-        check = self.find_elements(
-                    By.XPATH, f'//span[text()="{name}"]'
-                )
-        total = len(check)
-        print(total, name)
+        # cp = self.find_element(
+        #     By.XPATH, f'//h2[text()="Mahasiswa"]'
+        # )
+        # td = cp.find_element(
+        #             By.XPATH, f'//following-sibling::div'
+        #             )
+        dt = self.find_element(By.ID, 'eac-container-search')
+        
+        check = dt.find_elements(By.XPATH, f'//span[text()="{name}"]')
+        correct = []
+        for element in check:
+            univ_confirmation = element.find_element(By.XPATH, f'//following-sibling::span').text
+            print(univ_confirmation)
+            if university in univ_confirmation:
+                correct.append(element)
+        total = len(correct)
         if total > 1:
-             raise DataDuplicate(message =f'There are {total} data')
+             raise DataDuplicate(message =f'There are more than 1 data')
         elif total < 1:
              raise MissingData(message ='Data doesnt exist')
         else:
-            try:
-                selected_element = self.find_element(
-                        By.XPATH, f'//span[text()="{name}"]'
-                    )
-                selected_element.click()
-                selected_table = self.find_element(
-                By.XPATH, '//table[@class = "table table-bordered"]'
-                )
-            except:
-                raise MissingData(message ='Data doesnt exist')
+            selected_element = correct[0]
+            selected_element.click()
+            # time.sleep(2)
+            # try:
+            #     self.find_element(
+            #     By.XPATH, '//table[@class = "table table-bordered"]'
+            #     )
+            # except:
+            #     raise MissingData(message ='Data doesnt exist')
         
         
     def extract_data(self, userid): 
@@ -115,16 +126,17 @@ class Students(webdriver.Chrome):
 def run():
     student = openFile()
     with Students() as bot:
-        bot.land_first_page()
-        for ind in range(11, len(student)):
+        for ind in range(0, len(student)):
+            bot.land_first_page()
             df = pd.DataFrame()
             error = pd.DataFrame()
             name = student['Name'][ind]
             userid = student['user_id'][ind]
+            univ = student['University'][ind]
             time.sleep(2)
             bot.insert_prompt(name)
             try:
-                bot.find_name(name)
+                bot.find_name(name, university=univ)
             except DataDuplicate as e:
                 data = pd.DataFrame({'user_id':userid, 'name': name, 'reason': e}, index=[0])
                 error=error.append(data)
@@ -138,10 +150,11 @@ def run():
             saveFile('Student Metadata.xlsx', df)
             saveFile('Unsuccesful.xlsx', error)
             print(f'{name} is save')
+
 def openFile():
     path = 'userdata.xlsx'
     df = pd.read_excel(path)
-    df = df[['user_id', 'Name']]
+    df = df[['user_id', 'Name', 'University']]
     return df
 
 def saveFile(path, df):
@@ -149,6 +162,11 @@ def saveFile(path, df):
     main = main.append(df, ignore_index = True)
     main.to_excel(path, index = False)
 
-run()
+def test():
+    string = 'Universitas Indonesia'
+    sentence = 'Akmal Kuliah di Universitas Indonesia'
+    print(string in sentence)
+# test()
+#run()
 # df = openFile()
 # print(df.iloc[11])
