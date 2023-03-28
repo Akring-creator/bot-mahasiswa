@@ -42,7 +42,6 @@ class Students(webdriver.Chrome):
             By.XPATH, '//input[@pattern="([A-z0-9À-ž\s]){2,}"]'
         )
         selected_element.send_keys(f'{name}')
-        time.sleep(2)
         selected_element.send_keys(Keys.ENTER)
         time.sleep(2)
         
@@ -64,9 +63,9 @@ class Students(webdriver.Chrome):
                     By.XPATH, f'//span[text()="{name}"]'
                 )
             selected_element.click()
-        time.sleep(5)
+        time.sleep(4)
         
-    def extract_data(self): 
+    def extract_data(self, userid): 
         """
         This function extract student metadata
         """
@@ -79,6 +78,7 @@ class Students(webdriver.Chrome):
         data.index = column
         data=data.drop(data.columns[[0, 1, 3]], axis=1)
         data = data.transpose()
+        data['user_id'] = userid
         return data
     
     def extract_table(self, name, userID):
@@ -96,7 +96,7 @@ class Students(webdriver.Chrome):
                 By.XPATH, '//a[text()="Riwayat Studi"]'
             )
         selected_element.click()
-        time.sleep(2)
+        time.sleep(1)
 
         selected_table = self.find_element(
                 By.XPATH, '//table[@class = "table table-bordered table-responsive"]'
@@ -109,23 +109,23 @@ def run():
     student = openFile()
     with Students() as bot:
         bot.land_first_page()
-        for ind in range(0, len(student)):
+        for ind in range(8, len(student)):
             df = pd.DataFrame()
             error = pd.DataFrame()
             name = student['Name'][ind]
             userid = student['user_id'][ind]
-            time.sleep(5)
+            time.sleep(2)
             bot.insert_prompt(name)
             try:
                 bot.find_name(name)
             except DataDuplicate as e:
-                data = pd.DataFrame({'name': name, 'reason': e}, index=[0])
+                data = pd.DataFrame({'user_id':userid, 'name': name, 'reason': e}, index=[0])
                 error=error.append(data)
             except MissingData as e:
-                data = pd.DataFrame({'name': name, 'reason': e}, index=[0])
+                data = pd.DataFrame({'user_id':userid,'name': name, 'reason': e}, index=[0])
                 error=error.append(data)
             else:
-                data = bot.extract_data()
+                data = bot.extract_data(userid=userid)
                 df = df.append(data, ignore_index = True)
                 bot.extract_table(name, userid)
             saveFile('Student Metadata.xlsx', df)
@@ -142,6 +142,6 @@ def saveFile(path, df):
     main = main.append(df, ignore_index = True)
     main.to_excel(path, index = False)
 
-run()
-# df = openFile()
-# print(df.iloc[11])
+# run()
+df = openFile()
+print(df.iloc[8])
